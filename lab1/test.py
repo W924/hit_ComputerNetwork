@@ -1,9 +1,11 @@
-import urlparse
+from hashlib import md5 as m
 
-# url = "https://www.google.com.hk:8080/home/search;12432?newwi.1.9.serpuc#1234"
-url = "www.baidu.com/"
-r = urlparse.urlparse(url)
-print r
-print r.port
-print r.hostname
-print r.geturl()
+m1 = m()
+m1.update('hello')
+m1.update(' ')
+m1.update('python')
+
+m2 = m('hello python')
+
+print m1.hexdigest() == m2.hexdigest()
+print m1
