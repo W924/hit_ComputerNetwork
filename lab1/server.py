@@ -112,6 +112,7 @@ def proxy(conn, addr):
             # print data
             fp = open(filename, 'wb')
             if count == 0:
+                # 如果没有被修改，响应报文首部应该为 HTTP/1.1 304 Not Modified
                 if data.split()[1] == '304':
                     source_socket.send(open(filename, 'rb').read())
                     print "-------------------This page has not been updated-----------------------------"
