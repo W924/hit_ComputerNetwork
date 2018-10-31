@@ -1,11 +1,8 @@
-from hashlib import md5 as m
+import datetime
 
-m1 = m()
-m1.update('hello')
-m1.update(' ')
-m1.update('python')
-
-m2 = m('hello python')
-
-print m1.hexdigest() == m2.hexdigest()
-print m1
+a = "Wed, 06 Jul 2016 03:06:11 GMT"
+b = "Wed, 31 Oct 2018 10:21:19 GMT"
+GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
+a_ = datetime.datetime.strptime(a, GMT_FORMAT)
+b_ = datetime.datetime.strptime(b, GMT_FORMAT)
+print a_ < b_

@@ -5,6 +5,9 @@ import threading
 import os
 import hashlib
 import time
+import datetime
+
+GMT_FORMAT = '%a, %d %b %Y %H:%M:%S GMT'
 
 Network_Filtering = [
     # 'www.qq.com',
@@ -100,6 +103,7 @@ def proxy(conn, addr):
         # 如果有缓存，则需要If-Modified-Since首部字段来确定是否为最新的
         new_message = request_line + '\n'
         t = (time.strptime(time.ctime(os.path.getmtime(filename)), "%a %b %d %H:%M:%S %Y"))
+        # print time.strftime('%a, %d %b %Y %H:%M:%S GMT', t)
         new_message += 'If-Modified-Since: ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', t) + '\n'
         for line in request_message.split('\n')[1:]:
             new_message += line + '\n'
@@ -112,11 +116,26 @@ def proxy(conn, addr):
             # print data
             fp = open(filename, 'wb')
             if count == 0:
-                # 如果没有被修改，响应报文首部应该为 HTTP/1.1 304 Not Modified
-                if data.split()[1] == '304':
-                    source_socket.send(open(filename, 'rb').read())
-                    print "-------------------This page has not been updated-----------------------------"
-                    break
+                loc1 = data.find("Last-Modified")
+                # print loc1
+                if loc1 >= 0:
+                    b = data[loc1:]
+                    loc2 = b.find('\r\n')
+                    c = b[15:loc2]         # 为GMT格式
+                    now_time = datetime.datetime.strptime(time.strftime('%a, %d %b %Y %H:%M:%S GMT', t), GMT_FORMAT)
+                    last_time = datetime.datetime.strptime(c, GMT_FORMAT)
+                    # print "now time: ", now_time
+                    # print "last modified time: ", last_time
+                    if now_time > last_time:   # 说明没有被修改过
+                        print "--------------this page has not been modified------------------"
+                        source_socket.send(open(filename, 'rb').read())
+                        break
+                    else:                      # 如果被修改过，则将新的报文返回给客户端
+                        if len(data) > 0:
+                            source_socket.send(data)
+                            fp.write(data)
+                        else:
+                            break
                 else:
                     if len(data) > 0:
                         source_socket.send(data)
