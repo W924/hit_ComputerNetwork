@@ -39,21 +39,14 @@ def proxy(conn, addr):
     if not request_message:
         source_socket.close()
         return
-    # print request_message
 
     request_line = request_message.split('\n')[0]             # 请求行
     remain_lines = request_message[request_message.find('\n') + 1:]         # 剩余字段，其中包括首部行以及数据主体
-    # print remain_lines
-    # print request_line
 
     method = request_line.split()[0]
     path = request_line.split()[1]
     url = urlparse.urlparse(path)
     version = request_line.split()[2]
-    # print request_line
-    # print path
-    # print url
-    # print url.hostname
 
     data = "%s %s %s\r\n" % (method, path, version)
     send_message = data + remain_lines
@@ -63,11 +56,9 @@ def proxy(conn, addr):
     if not hostname:
         source_socket.close()
         return
-    # print hostname
     port = 80
     if url.port is not None:
         port = url.port
-    # print port
 
     # 实现网络过滤
     if hostname in Network_Filtering:
@@ -103,7 +94,6 @@ def proxy(conn, addr):
         # 如果有缓存，则需要If-Modified-Since首部字段来确定是否为最新的
         new_message = request_line + '\n'
         t = (time.strptime(time.ctime(os.path.getmtime(filename)), "%a %b %d %H:%M:%S %Y"))
-        # print time.strftime('%a, %d %b %Y %H:%M:%S GMT', t)
         new_message += 'If-Modified-Since: ' + time.strftime('%a, %d %b %Y %H:%M:%S GMT', t) + '\n'
         for line in request_message.split('\n')[1:]:
             new_message += line + '\n'
@@ -113,19 +103,15 @@ def proxy(conn, addr):
         count = 0
         while True:
             data = dest_socket.recv(max_len)
-            # print data
             fp = open(filename, 'wb')
             if count == 0:
                 loc1 = data.find("Last-Modified")
-                # print loc1
                 if loc1 >= 0:
                     b = data[loc1:]
                     loc2 = b.find('\r\n')
                     c = b[15:loc2]         # 为GMT格式
                     now_time = datetime.datetime.strptime(time.strftime('%a, %d %b %Y %H:%M:%S GMT', t), GMT_FORMAT)
                     last_time = datetime.datetime.strptime(c, GMT_FORMAT)
-                    # print "now time: ", now_time
-                    # print "last modified time: ", last_time
                     if now_time > last_time:   # 说明没有被修改过
                         print "--------------this page has not been modified------------------"
                         source_socket.send(open(filename, 'rb').read())
@@ -157,7 +143,6 @@ def proxy(conn, addr):
         fp = open(filename, 'ab')
         while True:
             data = dest_socket.recv(max_len)
-            # print data
             if len(data) > 0:
                 fp.write(data)
                 source_socket.send(data)
