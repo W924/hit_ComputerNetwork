@@ -4,7 +4,7 @@ import socket
 import struct
 import time
 
-LOSS_RATE = 0
+LOSS_RATE = 0.1
 
 
 # GBN发送端
@@ -143,7 +143,7 @@ class GBNReceiver:
         # 通过LOSS_RATA来模拟确认报文丢失，引起超时现象
         if random.random() >= self.loss_rate:
             self.receiver_socket.sendto(pkt, self.target)
-            print('接收端发送ack：', pkt[0], pkt[1])
+            print('接收端发送: ack ', pkt[0], 'expect ', pkt[1])
         else:
-            print('接收端发送ack：', pkt[0], pkt[1], ', 但已丢失')
+            print('接收端发送: ack ', pkt[0], 'expect ', pkt[1], ', 但已丢失')
             time.sleep(0.3)
