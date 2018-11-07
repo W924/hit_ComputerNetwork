@@ -48,7 +48,6 @@ class GBNSender:
 
     # 收到确认分组后进行的操作
     def wait_ack(self):
-        # 重新启动定时器
         self.sender_socket.settimeout(self.timeout)
         count = 0
         while True:
@@ -70,6 +69,7 @@ class GBNSender:
                 for i in range(self.base, self.nextseqnum):
                     print('发送端重新发送数据分组：', i)
                     self.udp_send(self.buffer[i])
+                # 重新启动定时器
                 self.sender_socket.settimeout(self.timeout)
             # 如果多次超时，则终止
             if count >= 8:
@@ -97,7 +97,7 @@ class GBNSender:
 class GBNReceiver:
     def __init__(self, receiver_socket):
         self.receiver_socket = receiver_socket      # 接收端套接字
-        self.loss_rate = 0                          # 丢包率
+        self.loss_rate = LOSS_RATE                          # 丢包率
         self.expectseqnum = 0                       # 初始化期望收到的分组序列号
         self.timeout = 8                           # 超时时间
         self.target = None                          # 发送端地址
@@ -119,12 +119,10 @@ class GBNReceiver:
                 self.udp_send(ack_pkt)
                 # 如果是最后一个数据分组，通告上层
                 if flag:
-                    # print(data_deliver)
-                    # data_deliver = struct.pack('ss', data_deliver, '\r\n')
                     return data_deliver, True
                 else:
                     return data_deliver, False
-            # 如果有错的话，则再发送ACK
+            # 如果有错的话，则再发送最近按序接收的分组的ACK
             else:
                 ack_pkt = struct.pack('BB', (self.expectseqnum - 1) % 256, self.expectseqnum)
                 self.udp_send(ack_pkt)

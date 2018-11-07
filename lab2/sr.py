@@ -63,7 +63,7 @@ class SRSender:
                 if ack_seq in range(self.base, self.base + self.window_size):
                     self.acks[ack_seq] = True
 
-                # 滑动窗口，滑至从左到后第一个未确认的分组
+                # 滑动窗口，滑至从左到右第一个未确认的分组
                 if ack_seq == self.base:
                     while self.acks[self.base]:
                         self.base = (self.base + 1) % 256
@@ -112,7 +112,7 @@ class SRReceiver:
     def __init__(self, receiver_socket):
         self.receiver_socket = receiver_socket      # 接收端套接字
         self.window_size = 4                        # 接收方窗口尺寸
-        self.loss_rate = 0                          # 丢包率
+        self.loss_rate = 0.1                          # 丢包率
         self.base = 0                               # 窗口头部
         # self.expectseqnum = 0                       # 初始化期望收到的分组序列号
         self.timeout = 8                            # 超时时间
@@ -145,11 +145,11 @@ class SRReceiver:
                 while self.rcv_buffer[self.base] is not None:
                     tmp = self.base
                     self.base = (self.base + 1) % 256
-                    self.rcv_buffer[self.base + self.window_size] = None  # 新划入的单元要初始化
+                    self.rcv_buffer[self.base + self.window_size] = None
                     # 如果是最后一个数据分组，通告上层
                     return self.rcv_buffer[tmp], False
 
-            # 如果有错的话，则再发送ACK，此时不缓存
+            # 如果有错的话，则重新确认那些序号小于当前窗口基序号的分组，此时不缓存
             else:
                 ack_pkt = struct.pack('B', ack)
                 self.udp_send(ack_pkt)
