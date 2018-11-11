@@ -14,22 +14,6 @@ extern unsigned int getIpv4Address();
 
 // implemented by students
 
-short compute_checksum(char *pBuffer, int header_len) {
-	int i, sum = 0;
-	for(i = 0; i < header_len * 2; i++) {
-		if(i != 5)
-		{
-			sum += (int)((unsigned char)pBuffer[i*2] << 8);
-			sum += (int)((unsigned char)pBuffer[i*2+1]);
-		}
-	}
-
-	while((sum & 0xffff0000) != 0) {
-		sum = (sum & 0xffff) + ((sum >> 16) & 0xffff);
-	}
-	return (~sum) & 0xffff;
-}
-
 struct Ipv4{
 	char version_headlen;
 	char TOS;
@@ -43,21 +27,22 @@ struct Ipv4{
 	unsigned int dest_addr;
 	
 	Ipv4() {memset(this,0,sizeof(Ipv4));}
-	Ipv4(unsigned int len,unsigned int srcAddr,unsigned int dstAddr, byte _protocol,byte ttl) {
-		memset(this,0,sizeof(Ipv4));
-		version_headlen = 0x45;
-		total_len = htons(len+20);
-		TTL = ttl;
-		protocol = _protocol;
-		source_addr = htonl(srcAddr);
-		dest_addr = htonl(dstAddr);
-    
-		char *pBuffer;
-		memcpy(pBuffer,this,sizeof(Ipv4));
-		header_checksum = htons(compute_checksum(pBuffer, 5));
-	}
-	
 };
+
+short compute_checksum(char *pBuffer, int header_len) {
+	int i, sum = 0;
+	for(i = 0; i < header_len * 2; i++) {
+		if(i != 5)
+		{
+			sum += (int)((unsigned char)pBuffer[i * 2] << 8);
+			sum += (int)((unsigned char)pBuffer[i * 2 + 1]);
+		}
+	}
+	while((sum & 0xffff0000) != 0) {
+		sum = (sum & 0xffff) + ((sum >> 16) & 0xffff);
+	}
+	return (~sum) & 0xffff;
+}
 
 int stud_ip_recv(char *pBuffer,unsigned short length) {
 	Ipv4 *ipv4 = new Ipv4();
@@ -72,27 +57,27 @@ int stud_ip_recv(char *pBuffer,unsigned short length) {
 	short checksum_cal = compute_checksum(pBuffer, header_len);
 	
 	if(version != 0x40)  {
-	ip_DiscardPkt(pBuffer,STUD_IP_TEST_VERSION_ERROR);
+	ip_DiscardPkt(pBuffer, STUD_IP_TEST_VERSION_ERROR);
 		return 1;
 	}
 
 	if(header_len < 0x05) {
-	ip_DiscardPkt(pBuffer,STUD_IP_TEST_HEADLEN_ERROR);
+	ip_DiscardPkt(pBuffer, STUD_IP_TEST_HEADLEN_ERROR);
 		return 1;
 	}
 
 	if(ttl == 0) {
-		ip_DiscardPkt(pBuffer,STUD_IP_TEST_TTL_ERROR);
+		ip_DiscardPkt(pBuffer, STUD_IP_TEST_TTL_ERROR);
 		return 1;
 	}
 	
 	if(checksum_cal != header_checksum) {
-		ip_DiscardPkt(pBuffer,STUD_IP_TEST_CHECKSUM_ERROR);
+		ip_DiscardPkt(pBuffer, STUD_IP_TEST_CHECKSUM_ERROR);
 		return 1;
 	}
 	
 	if(dest_addr != local_addr && dest_addr != 0xffffffff) {
-		ip_DiscardPkt(pBuffer,STUD_IP_TEST_DESTINATION_ERROR);
+		ip_DiscardPkt(pBuffer, STUD_IP_TEST_DESTINATION_ERROR);
 		return 1;
 	}
 	
@@ -102,11 +87,21 @@ int stud_ip_recv(char *pBuffer,unsigned short length) {
 
 int stud_ip_Upsend(char *pBuffer, unsigned short len, unsigned int srcAddr, unsigned int dstAddr, byte protocol, byte ttl) {
 	
-	char *pkt_send = new char[len+20];
-	memset(pkt_send,0,len+20);
-	*((Ipv4*)pkt_send) = Ipv4(len,srcAddr,dstAddr,protocol,ttl);
-	memcpy(pkt_send+20,pBuffer,len);
+	byte *pkt_send = new byte[len + 20];
+	memset(pkt_send, 0, len+20);
 	
-	ip_SendtoLower(pkt_send,len+20);
+	pkt_send[0] = 0x45;
+	pkt_send[1] = 0x80; 
+	pkt_send[8] = ttl;
+	pkt_send[9] = protocol;
+	
+	*(short *)(pkt_send + 2) = htons(20 + len);
+	*(int *)(pkt_send + 12) = ntohl(srcAddr);
+	*(int *)(pkt_send + 16) = ntohl(dstAddr);
+	*(short *)(pkt_send + 10) = htons(compute_checksum(pkt_send, 5));
+	
+	memcpy(pkt_send + 20, pBuffer, len);
+	
+	ip_SendtoLower(pkt_send, len + 20);
 	return 0;
 }
