@@ -15,16 +15,16 @@ extern unsigned int getIpv4Address();
 // implemented by students
 
 struct Ipv4{
-	char version_headlen;
-	char TOS;
-	short total_len;
-	short identification;
-	short flag_offset;
-	char TTL;
-	char protocol;
-	short header_checksum;
-	unsigned int source_addr;
-	unsigned int dest_addr;
+	char version_headlen;		// 版本号与首部长度
+	char TOS;				  	// 服务类型
+	short total_len;		 	// 报文总长度
+	short identification;		// 标识
+	short flag_offset;			// 标志位以及片偏移
+	char TTL;					// 生存时间
+	char protocol;				// 上层协议类型
+	short header_checksum;		// 首部校验和
+	unsigned int source_addr;	// 源IP地址
+	unsigned int dest_addr;		// 目的IP地址
 	
 	Ipv4() {memset(this,0,sizeof(Ipv4));}
 };
@@ -66,7 +66,7 @@ int stud_ip_recv(char *pBuffer,unsigned short length) {
 		return 1;
 	}
 
-	if(ttl == 0) {
+	if(ttl <= 0) {
 		ip_DiscardPkt(pBuffer, STUD_IP_TEST_TTL_ERROR);
 		return 1;
 	}
@@ -85,7 +85,8 @@ int stud_ip_recv(char *pBuffer,unsigned short length) {
 	return 0;
 }
 
-int stud_ip_Upsend(char *pBuffer, unsigned short len, unsigned int srcAddr, unsigned int dstAddr, byte protocol, byte ttl) {
+int stud_ip_Upsend(char *pBuffer, unsigned short len, unsigned int srcAddr, 
+					unsigned int dstAddr, byte protocol, byte ttl) {
 	
 	byte *pkt_send = new byte[len + 20];
 	memset(pkt_send, 0, len+20);
